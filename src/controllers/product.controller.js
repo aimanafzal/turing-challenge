@@ -24,6 +24,8 @@ import {
   Attribute,
   Category,
   Sequelize,
+  ProductCategory,
+  Review
 } from '../database/models';
 
 const { Op } = Sequelize;
@@ -97,7 +99,10 @@ class ProductController {
     const { query_string, all_words } = req.query;  // eslint-disable-line
     // all_words should either be on or off
     // implement code to search product
-    return res.status(200).json({ message: 'this works' });
+
+    console.log(`QueryString: ${query_string}`);
+    console.log(`All_words: ${all_words}`);
+    return res.status(200).json({ message: 'this works', query_string: query_string, all_words: all_words });
   }
 
   /**
@@ -113,10 +118,21 @@ class ProductController {
   static async getProductsByCategory(req, res, next) {
     try {
       const { category_id } = req.params; // eslint-disable-line
+      const sqlQueryMap = {
+        page: 1,
+        limit: 20,
+        description_length: 200,
+        offset: 0
+      };
+      let page = sqlQueryMap.page
+      let limit = sqlQueryMap.limit
+      let description_length = sqlQueryMap.description_length
+      let offset = sqlQueryMap.offset
+
       const products = await Product.findAndCountAll({
         include: [
           {
-            model: Department,
+            model: Category,
             where: {
               category_id,
             },
@@ -126,7 +142,10 @@ class ProductController {
         limit,
         offset,
       });
-      return next(products);
+      return res.status(200).json(
+        products.rows
+      );
+      //return next(products);
     } catch (error) {
       return next(error);
     }
@@ -144,6 +163,39 @@ class ProductController {
    */
   static async getProductsByDepartment(req, res, next) {
     // implement the method to get products by department
+    try {
+      const { department_id } = req.params; // eslint-disable-line
+      const sqlQueryMap = {
+        page: 1,
+        limit: 20,
+        description_length: 200,
+        offset: 0
+      };
+      let page = sqlQueryMap.page
+      let limit = sqlQueryMap.limit
+      let description_length = sqlQueryMap.description_length
+      let offset = sqlQueryMap.offset
+
+      const products = await Product.findAndCountAll({
+        include: [
+          {
+            model: Category,
+            where: {
+              department_id,
+            },
+            attributes: [],
+          },
+        ],
+        limit,
+        offset,
+      });
+      return res.status(200).json(
+        products.rows
+      );
+      //return next(products);
+    } catch (error) {
+      return next(error);
+    }
   }
 
   /**
@@ -158,6 +210,9 @@ class ProductController {
    */
   static async getProduct(req, res, next) {
 
+    const sqlQueryMap = {
+      description_length: 200
+    };
     const { product_id } = req.params;  // eslint-disable-line
     try {
       const product = await Product.findByPk(product_id, {
@@ -175,10 +230,78 @@ class ProductController {
                 as: 'attribute_type',
               },
             ],
+            sqlQueryMap,
           },
         ],
       });
-      return res.status(500).json({ data: product, message: 'This works!!1' });
+      return res.status(500).json({
+        product_id: product.product_id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        discounted_price: product.discounted_price,
+        image: product.image,
+        image_2: product.image_2,
+        thumbnail: product.thumbnail,
+        display: product.display
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+
+  /**
+     * get product Reviews
+     *
+     * @static
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {object} next next middleware
+     * @returns {json} json object with status and product details
+     * @memberof ProductController
+     */
+  static async getProductReviews(req, res, next) {
+
+    const sqlQueryMap = {
+      description_length: 200
+    };
+    const { product_id } = req.params;  // eslint-disable-line
+    try {
+      if (product_id) {
+        const review = await Review.findByPk(product_id);
+        if (review) {
+          return res.status(200).json(
+            review
+          );
+        }
+      }
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+
+  /**
+     * get product Reviews
+     *
+     * @static
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {object} next next middleware
+     * @returns {json} json object with status and product details
+     * @memberof ProductController
+     */
+  static async postProductReviews(req, res, next) {
+    const metadata = {
+      product_id: req.body.product_id,
+      review: req.body.review,
+      rating: req.body.rating
+    };
+    try {
+      const review = await Review.create(metadata);
+      if (review)
+        return res.status(201).json(review);
     } catch (error) {
       return next(error);
     }
