@@ -18,6 +18,7 @@
  *  endpoints, request body/param, and response object for each of these method
  */
 import { Order, OrderDetail, Customer, ShoppingCart, Product } from '../database/models';
+const stripe = require("stripe")(process.env.STRIPE_API_KEY);
 
 /**
  *
@@ -171,11 +172,12 @@ class ShoppingCartController {
     try {
       // implement code to remove item from cart here
       const item_id = req.params.item_id; // eslint-disable-line
-      const shoppingcart = await ShoppingCart.item_remove({
-        where: {
-          item_id: item_id
-        }
-      })
+      // const shoppingcart = await ShoppingCart.item_remove({
+      //   where: {
+      //     item_id: item_id
+      //   }
+      // })
+
 
       // const shoppingcart = await ShoppingCart.update({
       //   item_id: null,
@@ -339,6 +341,26 @@ class ShoppingCartController {
     const { customer_id } = req;  // eslint-disable-line
     try {
       // implement code to process payment and send order confirmation email here
+      let amount = 5 * 100; // 500 cents means $5
+      // create a customer
+      stripe.customers.create({
+        email: req.body.email, // customer email, which user need to enter while making payment
+        source: req.body.stripeToken // token for the given card
+      }).then(customer =>
+        stripe.charges.create({ // charge the customer
+          amount,
+          description: "Sample Charge",
+          currency: "usd",
+          customer: customer.id
+        })).then(charge => {
+          return res.status(200).json({
+            // stripeToken:req.body.stripeToken,
+            // order_id: "",
+            // description: "",
+            // amount: 0,
+            // currency: "USD"
+          });
+        });
     } catch (error) {
       return next(error);
     }
