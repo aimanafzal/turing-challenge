@@ -168,12 +168,26 @@ class ShoppingCartController {
    * @memberof ShoppingCartController
    */
   static async removeItemFromCart(req, res, next) {
-
     try {
       // implement code to remove item from cart here
       const item_id = req.params.item_id; // eslint-disable-line
+      const shoppingcart = await ShoppingCart.item_remove({
+        where: {
+          item_id: item_id
+        }
+      })
 
-      const shoppingcart = await ShoppingCart.empty( item_id  );
+      // const shoppingcart = await ShoppingCart.update({
+      //   item_id: null,
+      //   cart_id: null,
+      //   product_id: null,
+      //   attributes: null,
+      //   quantity: null,
+      //   buy_now: null,
+      //   added_on: null
+      // }, {
+      //     where: { item_id: item_id }
+      //   });
 
     } catch (error) {
       return next(error);
