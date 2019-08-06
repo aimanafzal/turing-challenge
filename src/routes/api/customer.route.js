@@ -19,6 +19,7 @@ router.post('/customers/facebook', CustomerController.facebook);
 router.get('/customer', CustomerController.getCustomerById);
 router.put('/customer', CustomerController.updateCustomerDetails);
 router.put('/customer/address', CustomerController.updateCustomerAddress);
+
 router.put('/customer/creditCard', CustomerController.updateCreditCard);
 
 export default router;

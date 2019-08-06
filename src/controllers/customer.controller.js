@@ -151,7 +151,7 @@ class CustomerController {
       return res.status(200).json({
         jwtToken: jwtToken.username,
         customer: customer,
-        message: 'Facebook Login this works'
+        //message: 'Facebook Login this works'
       });
     }
   }
@@ -170,7 +170,36 @@ class CustomerController {
   static async updateCustomerAddress(req, res, next) {
     // write code to update customer address info such as address_1, address_2, city, region, postal_code, country
     // and shipping_region_id
-    return res.status(200).json({ message: 'this works' });
+
+    const { customer_id } = req.headers;  // eslint-disable-line
+    const metaData = {
+      address_1: req.body.address_1,
+      address_2: req.body.address_2,
+      city: req.body.city,
+      region: req.body.region,
+      postal_code: req.body.postal_code,
+      shipping_region_id: req.body.shipping_region_id,
+    };
+    try {
+      const customer = await Customer.update(metaData, {
+        where: { customer_id, },
+      });
+      if (customer[0] == '1') {
+        const customerData = await Customer.findByPk(customer_id);
+        if (customerData) {
+          return res.status(200).json({
+            customerData
+          });
+        }
+      }
+      else {
+        return res.status(200).json({
+          message: 'Record Could not be updated!'
+        });
+      }
+    } catch (error) {
+      return next(error);
+    }
   }
 
   /**
@@ -185,7 +214,28 @@ class CustomerController {
    */
   static async updateCreditCard(req, res, next) {
     // write code to update customer credit card number
-    return res.status(200).json({ message: 'this works' });
+    const { customer_id } = req.headers;  // eslint-disable-line
+    const metaData = {
+      credit_card: req.body.credit_card
+    };
+    try {
+      const customer = await Customer.update(metaData, {
+        where: { customer_id, },
+      });
+      if (customer[0] == '1') {
+        const customerData = await Customer.findByPk(customer_id);
+        return res.status(200).json({
+          customerData
+        });
+      }
+      else
+        return res.status(200).json({
+          message: 'Record Could not be updated!'
+        });
+
+    } catch (error) {
+      return next(error);
+    }
   }
 
 
