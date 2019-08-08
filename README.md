@@ -6,6 +6,9 @@ https://docs.google.com/document/d/1quL6ixE8bhPyv-UwuhfkEXQJew21QQVjAIBTjtOtdk0/
 ## Database is already configured on cloud and credentials are available in .env file
 ## Since the Database is already configured in the .env file. Please skip the MYSQL configuration area mentioned in the Getting Started 
 
+# Please Note:
+Docker is not used
+
 ## Getting started
 
 ### Prerequisites
