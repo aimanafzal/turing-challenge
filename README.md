@@ -1,10 +1,10 @@
 # Turing Back End Challenge
 
-##API DOCUMENT CAN BE FOUND here:
-##https://docs.google.com/document/d/1quL6ixE8bhPyv-UwuhfkEXQJew21QQVjAIBTjtOtdk0/edit?usp=sharing
+## API DOCUMENT CAN BE FOUND here:
+https://docs.google.com/document/d/1quL6ixE8bhPyv-UwuhfkEXQJew21QQVjAIBTjtOtdk0/edit?usp=sharing
 
 ## Database is already configured on cloud and credentials are available in .env file
-
+## Since the Database is already configured in the .env file. Please skip the MYSQL configuration area mentioned in the Getting Started 
 
 ## Getting started
 
@@ -36,7 +36,4 @@ mysql -u <dbuser> -D <databasename> -p < ./src/database/database.sql
 
 * Run `npm run dev` to start the app in development
 
-
-## Request and Response Object API guide for all Endpoints
-Check [here](https://docs.google.com/document/d/1J12z1vPo8S5VEmcHGNejjJBOcqmPrr6RSQNdL58qJyE/edit?usp=sharing)
 
