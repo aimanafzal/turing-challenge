@@ -28,6 +28,8 @@ import {
   Review
 } from '../database/models';
 
+const error = require('../Error/error')
+
 const { Op } = Sequelize;
 
 /**
@@ -86,7 +88,7 @@ class ProductController {
   }
 
   /**
-   * search all products
+   * search all products based on the query_string and all_words
    *
    * @static
    * @param {object} req express request object
@@ -99,10 +101,52 @@ class ProductController {
     const { query_string, all_words } = req.query;  // eslint-disable-line
     // all_words should either be on or off
     // implement code to search product
+    const sqlQueryMap = {
+      description_length: 200,
+    };
 
-    console.log(`QueryString: ${query_string}`);
-    console.log(`All_words: ${all_words}`);
-    return res.status(200).json({ message: 'this works', query_string: query_string, all_words: all_words });
+    if (all_words == undefined) {
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'USR_10',
+          message: `all_words ${error.UsersError.USR_10}`,
+          field: 'all_words'
+        }
+      });
+    }
+    if (query_string == undefined) {
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'USR_10',
+          message: `query_string ${error.UsersError.USR_10}`,
+          field: 'query_string'
+        }
+      });
+    }
+
+    try {
+      const product = await Product.findAndCountAll(sqlQueryMap);
+
+      // 'All words on' will find from all fields
+      if (all_words.toLowerCase() === 'on') {
+        let data = product.rows.filter((data) =>
+          JSON.stringify(data).toLowerCase().indexOf(query_string.toLowerCase()) !== -1
+        );
+        return res.status(200).json(data);
+      }
+
+      // 'All Words OFF' will find only from name field which is the product name
+      if (all_words.toLowerCase() === 'off') {
+        let dataWithAllWordsOff = product.rows.filter((data) =>
+          data.name.indexOf(query_string) !== -1
+        )
+        return res.status(200).json(dataWithAllWordsOff);
+      }
+    } catch (error) {
+      return next(error);
+    }
   }
 
   /**
@@ -142,10 +186,22 @@ class ProductController {
         limit,
         offset,
       });
-      return res.status(200).json(
-        products.rows
-      );
-      //return next(products);
+      if (products.count === 0)
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'PRD_02',
+            message: `${error.ProductError.PRD_02} ${category_id}`,  // eslint-disable-line
+            field: 'category_id'
+          }
+        });
+
+      if (products)
+        return res.status(200).json(
+          products.rows
+        );
+
+
     } catch (error) {
       return next(error);
     }
@@ -189,10 +245,24 @@ class ProductController {
         limit,
         offset,
       });
-      return res.status(200).json(
-        products.rows
-      );
-      //return next(products);
+
+
+      if (products.count === 0)
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'PRD_03',
+            message: `${error.ProductError.PRD_03} ${department_id}`,  // eslint-disable-line
+            field: 'department_id'
+          }
+        });
+
+      if (products)
+        return res.status(200).json(
+          products.rows
+        );
+
+
     } catch (error) {
       return next(error);
     }
@@ -234,17 +304,29 @@ class ProductController {
           },
         ],
       });
-      return res.status(500).json({
-        product_id: product.product_id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        discounted_price: product.discounted_price,
-        image: product.image,
-        image_2: product.image_2,
-        thumbnail: product.thumbnail,
-        display: product.display
+      if (product)
+        return res.status(200).json({
+          product_id: product.product_id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          discounted_price: product.discounted_price,
+          image: product.image,
+          image_2: product.image_2,
+          thumbnail: product.thumbnail,
+          display: product.display
+        });
+
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'PRD_01',
+          message: `${error.ProductError.PRD_01} ${product_id}`,  // eslint-disable-line
+          field: 'product_id'
+        }
       });
+
+
     } catch (error) {
       return next(error);
     }
@@ -270,11 +352,20 @@ class ProductController {
     try {
       if (product_id) {
         const review = await Review.findByPk(product_id);
+
         if (review) {
           return res.status(200).json(
             review
           );
         }
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'REV_01',
+            message: `${error.ReviewError.REV_01} ${product_id}`,  // eslint-disable-line
+            field: 'product_id'
+          }
+        });
       }
     } catch (error) {
       return next(error);
@@ -296,12 +387,31 @@ class ProductController {
     const metadata = {
       product_id: req.body.product_id,
       review: req.body.review,
-      rating: req.body.rating
+      rating: req.body.rating,
+      customer_id: 0,
     };
     try {
-      const review = await Review.create(metadata);
-      if (review)
-        return res.status(201).json(review);
+      const product = await Product.findByPk(metadata.product_id);
+      if (product) {
+        const review = await Review.create(metadata);
+        if (review)
+          return res.status(201).json({
+            name: product.name,
+            review: metadata.review,
+            rating: metadata.rating,
+            created_on: review.created_on,
+          });
+      }
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'PRD_01',
+          message: `${error.ProductError.PRD_01} ${metadata.product_id}`,  // eslint-disable-line
+          field: 'product_id'
+        }
+      });
+
+
     } catch (error) {
       return next(error);
     }
@@ -342,7 +452,9 @@ class ProductController {
       return res.status(404).json({
         error: {
           status: 404,
-          message: `Department with id ${department_id} does not exist`,  // eslint-disable-line
+          code: 'DEP_02',
+          message: ` ${error.DepartmentError.DEP_02}${department_id}`,  // eslint-disable-line
+          field: 'department_id'
         }
       });
     } catch (error) {
@@ -358,15 +470,11 @@ class ProductController {
    */
   static async getAllCategories(req, res, next) {
     // Implement code to get all categories here
-    // try {
-    //   const departments = await Department.findAll();
-    //   return res.status(200).json(departments);
-    // } catch (error) {
-    //   return next(error);
-    // }
+
     try {
       const categories = await Category.findAll();
-      return res.status(200).json(categories);
+      if (categories)
+        return res.status(200).json(categories);
     } catch (error) {
       return next(error);
     }
@@ -391,7 +499,9 @@ class ProductController {
       return res.status(404).json({
         error: {
           status: 404,
-          message: `Category with id ${category_id} does not exist`,  // eslint-disable-line
+          code: 'CAT_01',
+          message: `${error.CategoryError.CAT_01}`,  // eslint-disable-line
+          field: 'category_id'
         }
       });
     } catch (error) {
@@ -425,8 +535,20 @@ class ProductController {
         limit,
         offset,
       });
-      //return next( products);
-      return res.status(200).json({ rows: products.rows });
+      if (products.count ===0){
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'DEP_02',
+            message: `${error.DepartmentError.DEP_02} ${department_id}`,  // eslint-disable-line
+            field: 'department_id'
+          }
+        });
+      }
+      if (products)
+        return res.status(200).json( products.rows );
+
+
     } catch (error) {
       return next(error);
     }
@@ -458,8 +580,19 @@ class ProductController {
           },
         ],
       });
-      //return next(products.rows);
-      return res.status(200).json({ rows: products.rows });
+      if (products.count === 0)
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'CAT_02',
+            message: `${error.CategoryError.CAT_01} ${product_id}`,
+            field: "product_id"
+          }
+        })
+      if (products)
+        return res.status(200).json(products.rows);
+
+
     } catch (error) {
       return next(error);
     }

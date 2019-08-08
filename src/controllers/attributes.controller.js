@@ -20,6 +20,8 @@ import {
   Category,
   Sequelize,
 } from '../database/models';
+
+const error = require('../Error/error')
 class AttributeController {
   /**
    * This method get all attributes
@@ -38,7 +40,8 @@ class AttributeController {
     };
     try {
       const attributes = await Attribute.findAndCountAll(sqlQueryMap);
-      return res.status(200).json(attributes.rows);
+      if (attributes)
+        return res.status(200).json(attributes.rows);
     } catch (error) {
       return next(error);
     }
@@ -74,7 +77,20 @@ class AttributeController {
         limit,
         offset,
       });
-      return res.status(200).json({ attribute });
+      if (attribute.count === 0) {
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ATR_01',
+            message: `${error.AttributeError.ATR_01} ${attribute_id}`,  // eslint-disable-line
+            field: 'attribute_id'
+          }
+        });
+      }
+      if (attribute)
+        return res.status(200).json(attribute.rows);
+
+
       //return next(attribute);
     } catch (error) {
       return next(error);
@@ -113,7 +129,18 @@ class AttributeController {
         limit,
         offset,
       });
-      return res.status(200).json(attribute.rows);
+      if ( attribute.count === 0){
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ATR_01',
+            message: `${error.AttributeError.ATR_01} ${attribute_id}`,  // eslint-disable-line
+            field: 'attribute_id'
+          }
+        });
+      }
+      if (attribute)
+        return res.status(200).json(attribute.rows);
     } catch (error) {
       return next(error);
     }
@@ -137,11 +164,11 @@ class AttributeController {
       offset,
     };
     try {
-      let attribute = await Product.findAndCountAll({
+      let attribute = await AttributeValue.findAndCountAll({
         include: [
           {
-            model: AttributeValue,
-            as: 'product',
+            model: Product,
+
             attributes: [],
             where: {
               product_id,
@@ -151,12 +178,23 @@ class AttributeController {
         limit,
         offset,
       });
-      return res.status(200).json(attribute.rows);
+      if ( attribute.count === 0){
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ATR_02',
+            message: `${error.AttributeError.ATR_02} ${product_id}`,  // eslint-disable-line
+            field: 'product_id'
+          }
+        });
+      }
+      if (attribute)
+        return res.status(200).json(attribute.rows);
+
+
     } catch (error) {
       return next(error);
     }
-
-
   }
 }
 

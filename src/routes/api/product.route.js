@@ -5,7 +5,11 @@ import CategoryController from '../../controllers/product.controller';
 // These are valid routes but they may contain a bug, please try to define and fix them
 
 const router = Router();
+
+router.get('/products/search', ProductController.searchProduct);
+
 router.get('/products', ProductController.getAllProducts);
+
 router.get('/products/:product_id', ProductController.getProduct);
 
 router.get('/products/:product_id/reviews', ProductController.getProductReviews);
@@ -14,7 +18,7 @@ router.get('/products/:product_id/reviews', ProductController.getProductReviews)
 router.post('/products/:product_id/reviews', ProductController.postProductReviews);
 
 
-router.get('/products/search', ProductController.searchProduct);
+// router.get('/products/search', ProductController.searchProduct);
 router.get('/products/inCategory/:category_id', ProductController.getProductsByCategory);
 router.get('/products/inDepartment/:department_id', ProductController.getProductsByDepartment);
 router.get('/departments', ProductController.getAllDepartments);

@@ -7,7 +7,7 @@
  *
  */
 import { ShippingRegion, Shipping } from '../database/models';
-
+const error = require('../Error/error');
 class ShippingController {
   /**
    * get all shipping regions
@@ -45,6 +45,16 @@ class ShippingController {
       const shippingTypes = await Shipping.findByPk(shipping_region_id);
       if (shippingTypes)
         return res.status(200).json(shippingTypes);
+      else {
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'SHP_01',
+            message: `${error.ShippingError.SHP_01} ${shipping_region_id}`,  // eslint-disable-line
+            field: 'shipping_region_id'
+          }
+        });
+      }
     } catch (error) {
       return next(error);
     }

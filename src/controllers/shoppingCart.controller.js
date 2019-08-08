@@ -19,7 +19,7 @@
  */
 import { Order, OrderDetail, Customer, ShoppingCart, Product } from '../database/models';
 const stripe = require("stripe")(process.env.STRIPE_API_KEY);
-
+const error = require('../Error/error')
 /**
  *
  *
@@ -39,8 +39,8 @@ class ShoppingCartController {
     // implement method to generate unique cart Id
     const shoppingCart = await ShoppingCart.findAndCountAll();
     let index = shoppingCart.count - 1;
-    if (index == 0)
-      return res.status(200).json({ "cart_id": parseInt(shoppingCart.rows[index].cart_id) + 1 });
+
+    return res.status(200).json({ "cart_id": parseInt(shoppingCart.rows[index].cart_id) + 1 });
   }
 
   /**
@@ -86,6 +86,7 @@ class ShoppingCartController {
     // implement method to get cart items
     const cart_id = req.params.cart_id;
     const shoppingcart = await ShoppingCart.findByPk(cart_id);
+
     if (shoppingcart) {
       const product = await Product.findByPk(shoppingcart.product_id);
       if (product) {
@@ -104,7 +105,19 @@ class ShoppingCartController {
           }
         );
       }
+
     }
+    else {
+
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'CRT_02',
+            message: `${error.CartError.CRT_02} ${cart_id} `,  // eslint-disable-line
+            field: 'cart_id'
+          }
+        });
+      }
   }
 
   /**
@@ -137,8 +150,13 @@ class ShoppingCartController {
       }
     }
     else {
-      return res.status(200).json({
-        message: 'Record Could not be updated!'
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'CRT_01',
+          message: `${error.CartError.CRT_01} ${item_id}`,  // eslint-disable-line
+          field: 'item_id'
+        }
       });
     }
 
@@ -172,24 +190,7 @@ class ShoppingCartController {
     try {
       // implement code to remove item from cart here
       const item_id = req.params.item_id; // eslint-disable-line
-      // const shoppingcart = await ShoppingCart.item_remove({
-      //   where: {
-      //     item_id: item_id
-      //   }
-      // })
-
-
-      // const shoppingcart = await ShoppingCart.update({
-      //   item_id: null,
-      //   cart_id: null,
-      //   product_id: null,
-      //   attributes: null,
-      //   quantity: null,
-      //   buy_now: null,
-      //   added_on: null
-      // }, {
-      //     where: { item_id: item_id }
-      //   });
+      res.status(200).send({ message: "It works" });
 
     } catch (error) {
       return next(error);
@@ -216,6 +217,15 @@ class ShoppingCartController {
       if (order) {
         let order_id = order.order_id;
         return res.status(201).json({ order_id });
+      } else {
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ORD_01',
+            message: `${error.OrderError.ORD_01}`,  // eslint-disable-line
+            field: 'order_id'
+          }
+        });
       }
     } catch (error) {
       return next(error);
@@ -244,8 +254,10 @@ class ShoppingCartController {
           orderData.shipped_on = element.shipped_on;
           let customers = Customer.findByPk(element.customer_id).then(data => {
             orderData.name = data.name
-            return res.status(200).json(orderData);
+            //  return res.status(200).json(orderData);
+            res.status(200).end(JSON.stringify(orderData))
           });
+
         });
       }
     } catch (error) {
@@ -276,6 +288,16 @@ class ShoppingCartController {
         let customers = Customer.findByPk(orders.customer_id).then(data => {
           orderData.name = data.name
           return res.status(200).json(orderData);
+        });
+      }
+      else {
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ORD_01',
+            message: `${error.OrderError.ORD_01}`,  // eslint-disable-line
+            field: 'order_id'
+          }
         });
       }
     } catch (error) {
@@ -321,7 +343,16 @@ class ShoppingCartController {
           order_id,
           order_items
         });
-
+      }
+      else {
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ORD_02',
+            message: `${error.OrderError.ORD_02} ${order_id}`,  // eslint-disable-line
+            field: 'order_id'
+          }
+        });
       }
 
     } catch (error) {
@@ -341,26 +372,36 @@ class ShoppingCartController {
     const { customer_id } = req;  // eslint-disable-line
     try {
       // implement code to process payment and send order confirmation email here
-      let amount = 5 * 100; // 500 cents means $5
-      // create a customer
-      stripe.customers.create({
-        email: req.body.email, // customer email, which user need to enter while making payment
-        source: req.body.stripeToken // token for the given card
-      }).then(customer =>
-        stripe.charges.create({ // charge the customer
-          amount,
-          description: "Sample Charge",
-          currency: "usd",
-          customer: customer.id
-        })).then(charge => {
-          return res.status(200).json({
-            // stripeToken:req.body.stripeToken,
-            // order_id: "",
-            // description: "",
-            // amount: 0,
-            // currency: "USD"
+      const order = await Order.findByPk(order_id);
+      if (order) {
+        let amount = parseInt(order.total_amount);
+        let stripeObject = await stripe.customers.create({
+          email: email, // customer email, which user need to enter while making payment
+          source: stripeToken, // token for the given card // we are using "tok_visa" considering a VISA Payment
+        }).then(customer =>
+          stripe.charges.create({ // charge the customer
+            amount,
+            description: "Sample Charge",
+            currency: "usd",
+            customer: customer.id,
+          })).then(charge => {
+            return {
+              charge,
+              message: charge.status
+            }
           });
+        return res.status(200).json(stripeObject)
+      }else {
+
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'ORD_02',
+            message: `${error.OrderError.ORD_02}${order_id} to perform the transaction.`,  // eslint-disable-line
+            field: 'order_id'
+          }
         });
+      }
     } catch (error) {
       return next(error);
     }

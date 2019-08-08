@@ -15,7 +15,7 @@
 import { Customer } from '../database/models';
 const config = require('../jwtSecret')
 const jwt = require('jsonwebtoken')
-
+const error = require('../Error/error')
 /**
  * @class CustomerController
  */
@@ -38,15 +38,29 @@ class CustomerController {
         email: req.body.email,
         password: req.body.password
       })
-      let accessToken = jwt.sign({ username: req.body.email },
-        config.secret,
-        {
-          expiresIn: '24h' // expires in 24 hours
+
+      if ( customer){
+        let accessToken = jwt.sign({ username: req.body.email },
+          config.secret,
+          {
+            expiresIn: '24h' // expires in 24 hours
+          }
+        )
+        let Bearer = `Bearer ${accessToken}`;
+        return res.status(201).json({ customer: customer,accessToken: Bearer, expiresIn: '24h' });
+      }
+
+
+    } catch (_error) {
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'USR_04',
+          message: `${error.UsersError.USR_04} with Email:  ${req.body.email}`,  // eslint-disable-line
+          field: 'email'
         }
-      )
-      return res.status(201).json({ customer: customer, accessToken, expiresIn: '24h' });
-    } catch (error) {
-      return next(error);
+      });
+      //return next(error);
     }
   }
 
@@ -171,7 +185,7 @@ class CustomerController {
     // write code to update customer address info such as address_1, address_2, city, region, postal_code, country
     // and shipping_region_id
 
-    const { customer_id } = req.headers;  // eslint-disable-line
+    const  customer_id = req.body.customer_id;  // eslint-disable-line
     const metaData = {
       address_1: req.body.address_1,
       address_2: req.body.address_2,
@@ -193,8 +207,13 @@ class CustomerController {
         }
       }
       else {
-        return res.status(200).json({
-          message: 'Record Could not be updated!'
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'CUS_01',
+            message: `${error.CustomerError.CUS_01} `,  // eslint-disable-line
+            field: 'customer_id'
+          }
         });
       }
     } catch (error) {
@@ -214,7 +233,7 @@ class CustomerController {
    */
   static async updateCreditCard(req, res, next) {
     // write code to update customer credit card number
-    const { customer_id } = req.headers;  // eslint-disable-line
+    const  customer_id  = req.body.customer_id;  // eslint-disable-line
     const metaData = {
       credit_card: req.body.credit_card
     };
@@ -228,10 +247,16 @@ class CustomerController {
           customerData
         });
       }
-      else
-        return res.status(200).json({
-          message: 'Record Could not be updated!'
+      else {
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'CUS_02',
+            message: `${error.CustomerError.CUS_02} `,  // eslint-disable-line
+            field: 'customer_id'
+          }
         });
+      }
 
     } catch (error) {
       return next(error);
@@ -274,7 +299,8 @@ class CustomerController {
      * @memberof CustomerController
      */
   static async updateCustomerDetails(req, res, next) {
-    const { customer_id } = req.headers;  // eslint-disable-line
+    const customer_id  = req.body.customer_id;  // eslint-disable-line
+
     const metaData = {
       email: req.body.email,
       name: req.body.name,
@@ -293,12 +319,25 @@ class CustomerController {
         });
       }
       else {
-        return res.status(200).json({
-          message: 'Record Could not be updated!'
+        return res.status(404).json({
+          error: {
+            status: 404,
+            code: 'CUS_01',
+            message: `${error.CustomerError.CUS_01}`,  // eslint-disable-line
+            field: 'customer_id'
+          }
         });
       }
-    } catch (error) {
-      return next(error);
+    } catch (_error) {
+
+      return res.status(404).json({
+        error: {
+          status: 404,
+          code: 'CUS_01',
+          message: `${error.CustomerError.CUS_01}`,  // eslint-disable-line
+          field: 'customer_id'
+        }
+      });
     }
   }
 
